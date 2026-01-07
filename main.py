@@ -38,8 +38,8 @@ def run_bot():
     while True:
         try:
             # Daman 30s API
-            res = requests.get("https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json", timeout=10).json()
-            item = res['data']['list'][0]
+            res = requests.get(http://194.5.159.86:5000/get_data
+          item = res['data']['list'][0]
             issue, num = item['issueNumber'], int(item['number'])
             if issue != last_issue:
                 bot.history.append(1 if num >= 5 else 0)
