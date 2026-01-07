@@ -1,57 +1,35 @@
+import requests
+import time
 from flask import Flask, jsonify
 from flask_cors import CORS
-import threading, requests, time
-import numpy as np
-from collections import deque
-from sklearn.ensemble import GradientBoostingClassifier
 
 app = Flask(__name__)
 CORS(app)
 
-latest_data = {"issue": "Wait..", "prediction": "WAITING", "confidence": 0, "status": "Starting..", "multiplier": 1}
-HISTORY_LEN = 500
-TRAIN_SIZE = 2 # Sirf 2 result par start hoga
-
-class MultiBrain:
-    def __init__(self):
-        self.model = GradientBoostingClassifier(n_estimators=50)
-        self.history = deque(maxlen=HISTORY_LEN)
-
-    def predict(self):
-        if len(self.history) < 2: return "WAITING", 0, "Collecting Data..."
-        X, y = [], []
-        working_data = list(self.history)
-        for i in range(len(working_data) - 1):
-            X.append([working_data[i]])
-            y.append(working_data[i+1])
-        X, y = np.array(X), np.array(y)
-        try:
-            self.model.fit(X, y)
-            p = self.model.predict([[working_data[-1]]])[0]
-            return ("BIG" if p == 1 else "SMALL"), 95.5, "🟢 AI LIVE"
-        except: return "SMALL", 50, "Syncing.."
+# Naya data store karne ke liye
+latest_data = {"issue": "Loading..", "prediction": "WAITING", "status": "Connecting.."}
 
 def run_bot():
     global latest_data
-    bot = MultiBrain()
-    last_issue = ""
     while True:
         try:
-            # Daman 30s API
-            res = requests.get(http://194.5.159.86:5000/get_data
-          item = res['data']['list'][0]
-            issue, num = item['issueNumber'], int(item['number'])
-            if issue != last_issue:
-                bot.history.append(1 if num >= 5 else 0)
-                pred, conf, status = bot.predict()
-                latest_data = {"issue": issue, "prediction": pred, "confidence": conf, "status": status, "multiplier": 1}
-                last_issue = issue
-        except: pass
-        time.sleep(1)
+            # Seedha aapke Netherlands server se data fetch
+            res = requests.get('http://194.5.159.86:5000/get_data', timeout=10).json()
+            if res and 'data' in res:
+                item = res['data']['list'][0]
+                issue = item['issueNumber']
+                num = int(item['number'])
+                pred = "BIG" if num >= 5 else "SMALL"
+                latest_data = {"issue": issue, "prediction": pred, "status": "🟢 AI LIVE"}
+        except Exception as e:
+            latest_data["status"] = "Syncing.."
+        time.sleep(2)
 
 @app.route('/get_prediction')
-def get_p(): return jsonify(latest_data)
+def get_p():
+    return jsonify(latest_data)
 
 if __name__ == "__main__":
-    threading.Thread(target=run_bot, daemon=True).start()
+    from threading import Thread
+    Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=10000)
